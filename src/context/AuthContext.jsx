@@ -24,12 +24,28 @@ export function AuthProvider({ children }) {
   }, [])
 
   const login = async (email, password) => {
-    const { data } = await endpoints.login({ email, password })
-    localStorage.setItem('raco_access_token', data.access)
-    localStorage.setItem('raco_refresh_token', data.refresh)
-    const me = await endpoints.me()
-    setUser(me.data)
-    return me.data
+    try {
+      const { data } = await endpoints.login({ email, password })
+      const accessToken = data.access || data.token || data.accessToken
+      const refreshToken = data.refresh || data.refreshToken
+
+      if (!accessToken) {
+        throw new Error('Login response was missing an access token')
+      }
+
+      localStorage.setItem('raco_access_token', accessToken)
+      if (refreshToken) {
+        localStorage.setItem('raco_refresh_token', refreshToken)
+      }
+
+      const me = await endpoints.me()
+      setUser(me.data)
+      return me.data
+    } catch (error) {
+      localStorage.removeItem('raco_access_token')
+      localStorage.removeItem('raco_refresh_token')
+      throw error
+    }
   }
 
   const register = async (payload) => {

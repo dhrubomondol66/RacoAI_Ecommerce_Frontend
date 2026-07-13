@@ -4,8 +4,15 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 
 const isProd = import.meta.env.PROD
 
+const normalizeBaseUrl = (value) => {
+  if (!value) return ''
+  return value.endsWith('/') ? value.slice(0, -1) : value
+}
+
+const API_BASE_URL = normalizeBaseUrl(BASE_URL)
+
 export const api = axios.create({
-  baseURL: BASE_URL,
+  baseURL: API_BASE_URL,
 })
 
 // Attach JWT access token to every request
@@ -47,29 +54,28 @@ api.interceptors.response.use(
       isRefreshing = true
 
       try {
-        const { data } = await axios.post(`${BASE_URL}/auth/refresh/`, {
-        refresh: refreshToken,
-      })
+        const refreshUrl = `${API_BASE_URL}/auth/refresh/`
+        const { data } = await axios.post(refreshUrl, { refresh: refreshToken })
 
-      localStorage.setItem(
-        "raco_access_token",
-        data.access
-      )
+        const nextAccessToken = data.access || data.token || data.accessToken
+        if (!nextAccessToken) {
+          throw new Error('Refresh response did not include an access token')
+        }
 
-      processQueue(null, data.access)
+        localStorage.setItem('raco_access_token', nextAccessToken)
 
-      originalRequest.headers.Authorization = `Bearer ${data.access}`
+        processQueue(null, nextAccessToken)
 
-      return api(originalRequest)
+        originalRequest.headers.Authorization = `Bearer ${nextAccessToken}`
 
+        return api(originalRequest)
       } catch (refreshError) {
-      processQueue(refreshError, null)
+        processQueue(refreshError, null)
 
-      localStorage.removeItem("raco_access_token")
-      localStorage.removeItem("raco_refresh_token")
+        localStorage.removeItem('raco_access_token')
+        localStorage.removeItem('raco_refresh_token')
 
-      return Promise.reject(refreshError)
-
+        return Promise.reject(refreshError)
       } finally {
         isRefreshing = false
       }
@@ -81,11 +87,44 @@ api.interceptors.response.use(
 // --- Endpoint helpers -------------------------------------------------
 // Adjust these paths if your DRF routers use different URL names.
 
+const tryEndpoints = async (candidates, payload) => {
+  let lastError = null
+
+  for (const candidate of candidates) {
+    try {
+      return await candidate(payload)
+    } catch (error) {
+      lastError = error
+      if (error?.response?.status !== 404 && error?.response?.status !== 405) {
+        throw error
+      }
+    }
+  }
+
+  throw lastError
+}
+
 export const endpoints = {
   // apps/users
-  register: (payload) => api.post('/users/register/', payload),
-  login: (payload) => api.post('/users/login/', payload),
-  me: () => api.get('/users/profile/'),
+  register: (payload) =>
+    tryEndpoints([
+      (body) => api.post('/users/register/', body),
+      (body) => api.post('/register/', body),
+      (body) => api.post('/users/signup/', body),
+    ], payload),
+  login: (payload) =>
+    tryEndpoints([
+      (body) => api.post('/users/login/', body),
+      (body) => api.post('/login/', body),
+      (body) => api.post('/users/token/', body),
+      (body) => api.post('/token/', body),
+    ], payload),
+  me: () =>
+    tryEndpoints([
+      () => api.get('/users/profile/'),
+      () => api.get('/profile/'),
+      () => api.get('/users/me/'),
+    ], undefined),
 
   // apps/categories (tree, DFS traversal on the backend)
   categories: () => api.get('/categories/'),
