@@ -83,9 +83,9 @@ api.interceptors.response.use(
 
 export const endpoints = {
   // apps/users
-  register: (payload) => api.post('/users/register', payload),
-  login: (payload) => api.post('/users/login', payload),
-  me: () => api.get('/users/profile'),
+  register: (payload) => api.post('/users/register/', payload),
+  login: (payload) => api.post('/users/login/', payload),
+  me: () => api.get('/users/profile/'),
 
   // apps/categories (tree, DFS traversal on the backend)
   categories: () => api.get('/categories/'),
