@@ -2,11 +2,11 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 // vite.config.js
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [react()],
   server: {
     port: 5173,
-    proxy: {
+    proxy: mode === 'development' ? {
       '/api': {
         target: 'https://correct-nurture-strainer.ngrok-free.dev',
         changeOrigin: true,
@@ -16,6 +16,6 @@ export default defineConfig({
           'ngrok-skip-browser-warning': 'true',
         },
       },
-    },
+    } : undefined,
   },
-})
+}))
