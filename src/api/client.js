@@ -13,6 +13,7 @@ const API_BASE_URL = normalizeBaseUrl(BASE_URL)
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
+  headers: { 'ngrok-skip-browser-warning': 'true' },
 })
 
 // Attach JWT access token to every request
