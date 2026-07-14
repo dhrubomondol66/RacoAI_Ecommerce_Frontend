@@ -108,21 +108,21 @@ export const endpoints = {
   // apps/users
   register: (payload) =>
     tryEndpoints([
-      (body) => api.post('/users/register/', body),
-      (body) => api.post('/register/', body),
+      (body) => api.post('/users/register', body),
+      (body) => api.post('/register', body),
       (body) => api.post('/users/signup/', body),
     ], payload),
   login: (payload) =>
     tryEndpoints([
-      (body) => api.post('/users/login/', body),
-      (body) => api.post('/login/', body),
+      (body) => api.post('/users/login', body),
+      (body) => api.post('/login', body),
       (body) => api.post('/users/token/', body),
       (body) => api.post('/token/', body),
     ], payload),
   me: () =>
     tryEndpoints([
-      () => api.get('/users/profile/'),
-      () => api.get('/profile/'),
+      () => api.get('/users/profile'),
+      () => api.get('/profile'),
       () => api.get('/users/me/'),
     ], undefined),
 
