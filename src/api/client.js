@@ -55,7 +55,9 @@ api.interceptors.response.use(
 
       try {
         const refreshUrl = `${API_BASE_URL}/auth/refresh/`
-        const { data } = await axios.post(refreshUrl, { refresh: refreshToken })
+        const { data } = await axios.post(refreshUrl, { refresh: refreshToken }, {
+          headers: { 'ngrok-skip-browser-warning': 'true' },
+        })
 
         const nextAccessToken = data.access || data.token || data.accessToken
         if (!nextAccessToken) {
@@ -105,40 +107,27 @@ const tryEndpoints = async (candidates, payload) => {
 }
 
 export const endpoints = {
-  // apps/users
-  register: (payload) =>
-    tryEndpoints([
-      (body) => api.post('/users/register', body),
-      (body) => api.post('/register', body),
-      (body) => api.post('/users/signup/', body),
-    ], payload),
-  login: (payload) =>
-    tryEndpoints([
-      (body) => api.post('/users/login', body),
-      (body) => api.post('/login', body),
-      (body) => api.post('/users/token/', body),
-      (body) => api.post('/token/', body),
-    ], payload),
-  me: () =>
-    tryEndpoints([
-      () => api.get('/users/profile'),
-      () => api.get('/profile'),
-      () => api.get('/users/me/'),
-    ], undefined),
+  register: (payload) => api.post('/users/register', payload),
+  login: (payload) => api.post('/users/login', payload),
+  me: () => api.get('/users/profile'),
 
-  // apps/categories (tree, DFS traversal on the backend)
+  forgotPassword: (payload) => api.post('/users/forgot-password', payload),
+  resetPassword: (payload) => api.post('/users/reset-password', payload),
+  adminForgotPassword: (payload) => api.post('/users/admin/forgot-password', payload),
+  adminResetPassword: (payload) => api.post('/users/admin/reset-password', payload),
+
   categories: () => api.get('/categories/'),
+  categoryTree: () => api.get('/categories/tree/'),
 
-  // apps/products
   products: (params) => api.get('/products/', { params }),
-  product: (slugOrId) => api.get(`/products/${slugOrId}/`),
+  product: (id) => api.get(`/products/${id}/`),
 
-  // apps/orders
   orders: () => api.get('/orders/'),
   order: (id) => api.get(`/orders/${id}/`),
   createOrder: (payload) => api.post('/orders/', payload),
+  cancelOrder: (id) => api.post(`/orders/${id}/cancel/`),
 
-  // apps/payments (Strategy pattern: provider = 'stripe' | 'bkash')
-  initiatePayment: (payload) =>
-    api.post('/payments/initiate/', payload)
+  initiatePayment: (payload) => api.post('/payments/initiate/', payload),
+  confirmPayment: (payload) => api.post('/payments/confirm/', payload),
+  payments: () => api.get('/payments/'),
 }
